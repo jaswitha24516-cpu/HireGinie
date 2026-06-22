@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recruiter Dashboard — HireGenie Talent Cloud</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* ── Dashboard layout ── */
+    .dash-header {
+      padding: 2rem 0 1.5rem;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dash-header h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .dash-header .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Stats row */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 700px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat-card {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .stat-card .sc-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      background: var(--gradient-h);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card .sc-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .controls input[type="text"] { flex: 1; min-width: 200px; }
+    .controls select { width: 180px; }
+
+    /* Sort toggle */
+    .sort-btn {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sort-btn:hover { border-color: var(--purple); color: var(--text); }
+    .sort-btn.active { border-color: var(--purple); color: var(--purple-light); background: rgba(107,63,160,0.08); }
+
+    /* Application row */
+    .app-row {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 0.75rem;
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .app-row:hover { border-color: rgba(107,63,160,0.6); }
+
+    .app-main { min-width: 0; }
+
+    .app-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .app-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .app-meta-item {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .app-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+    .status-new      { color: var(--orange);        border-color: rgba(244,98,42,0.35);   background: rgba(244,98,42,0.08); }
+    .status-reviewed { color: var(--purple-light);  border-color: rgba(139,94,199,0.35);  background: rgba(139,94,199,0.08); }
+    .status-shortlisted { color: #34D399;           border-color: rgba(52,211,153,0.35);  background: rgba(52,211,153,0.08); }
+    .status-rejected { color: #F87171;              border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
+
+    /* Detail drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+    .drawer {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: min(600px, 100vw);
+      background: var(--dark-mid);
+      border-left: 1px solid var(--border);
+      z-index: 201;
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      padding: 2rem;
+    }
+    .drawer-overlay.open .drawer { transform: translateX(0); }
+
+    .drawer-close {
+      position: absolute;
+      top: 1rem; right: 1.5rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .drawer h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      padding-right: 2rem;
+    }
+
+    .drawer-section { margin: 1.5rem 0; }
+    .drawer-section h4 {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .drawer-section p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    /* Score breakdown */
+    .scores-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 1rem 0;
+    }
+
+    .score-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .score-box .sb-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+    .score-box .sb-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+    .score-high-val { color: #34D399; }
+    .score-mid-val  { color: var(--orange); }
+    .score-low-val  { color: #F87171; }
+
+    /* Status update */
+    .status-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .status-action-btn {
+      font-size: 12px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .status-action-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); border-color: var(--purple); }
+
+    /* Auth gate */
+    .auth-gate {
+      text-align: center;
+      padding: 5rem 2rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .auth-gate .icon { font-size: 3rem; margin-bottom: 1.5rem; }
+    .auth-gate h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; margin-bottom: 0.8rem; }
+    .auth-gate p { color: var(--text-muted); font-size: 14px; margin-bottom: 2rem; }
+    .auth-form input { margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+
+<nav></nav>
+
+<div class="container">
+
+  <!-- Auth gate (shown until correct password) -->
+  <div id="authGate" class="auth-gate">
+    <div class="icon">🔐</div>
+    <h2>Recruiter Dashboard</h2>
+    <p>This area is for hiring managers only. Enter your access code to continue.</p>
+    <div class="form-group">
+      <input type="password" id="passInput" placeholder="Access code…" autocomplete="current-password"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="checkAuth()">
+      Enter Dashboard →
+    </button>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:1rem;">Default code: <code style="color:var(--orange)">hiregenie2025</code> — change this in dashboard.html</p>
+  </div>
+
+  <!-- Dashboard (hidden until auth) -->
+  <div id="dashContent" style="display:none;">
+
+    <div class="dash-header">
+      <div>
+        <h1>Applications Dashboard</h1>
+        <div class="subtitle" id="dashSubtitle">Loading…</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="loadApplications()">↻ Refresh</button>
+        <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="sc-val" id="statTotal">—</div><div class="sc-label">Total Applications</div></div>
+      <div class="stat-card"><div class="sc-val" id="statNew">—</div><div class="sc-label">New (Unreviewed)</div></div>
+      <div class="stat-card"><div class="sc-val" id="statAvgScore">—</div><div class="sc-label">Avg AI Score</div></div>
+      <div class="stat-card"><div class="sc-val" id="statShortlisted">—</div><div class="sc-label">Shortlisted</div></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input type="text" id="appSearch" placeholder="🔍  Search by name, role, skills…"/>
+      <select id="appJobFilter"><option value="">All Roles</option></select>
+      <select id="appStatusFilter">
+        <option value="">All Statuses</option>
+        <option>New</option>
+        <option>Reviewed</option>
+        <option>Shortlisted</option>
+        <option>Rejected</option>
+      </select>
+      <button class="sort-btn" id="sortScoreBtn" onclick="toggleSort()">Sort: AI Score ↓</button>
+    </div>
+
+    <div id="appsList"></div>
+
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer-overlay" id="drawerOverlay">
+  <div class="drawer">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+
+    <h2 id="dName"></h2>
+    <div class="job-company" id="dRole"></div>
+    <div class="job-meta" id="dMeta" style="margin:10px 0 1rem;"></div>
+
+    <!-- AI Scores -->
+    <div class="drawer-section" id="dScoreSection">
+      <h4>AI Score Breakdown</h4>
+      <div class="scores-grid" id="dScores"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drawer-section">
+      <h4>AI Recommendation</h4>
+      <p id="dRec" style="color:var(--text);font-size:14px;line-height:1.7;"></p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drawer-section">
+      <h4>Resume / CV</h4>
+      <p id="dResume"></p>
+    </div>
+
+    <div class="drawer-section" id="dCoverSection">
+      <h4>Cover Letter</h4>
+      <p id="dCover"></p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drawer-section">
+      <h4>Update Status</h4>
+      <div class="status-actions">
+        <button class="status-action-btn" onclick="updateStatus('Reviewed')">Mark Reviewed</button>
+        <button class="status-action-btn" onclick="updateStatus('Shortlisted')" style="color:#34D399;border-color:rgba(52,211,153,0.3);">✓ Shortlist</button>
+        <button class="status-action-btn" onclick="updateStatus('Rejected')" style="color:#F87171;border-color:rgba(248,113,113,0.3);">✗ Reject</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="drawer-section">
+      <h4>Contact</h4>
+      <div id="dContact" style="font-size:13px;color:var(--text-muted);line-height:2;"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  © 2025 HireGenie Talent Cloud · Built on GitHub Pages · AI Scoring by Groq
+</footer>
+
+<script src="js/shared.js"></script>
+<script>
+  // ── CONFIG ──
+  const ACCESS_CODE = 'hiregenie2025';  // ← Change this!
+
+  // Your published Google Sheet APPLICATIONS tab CSV URL
+  // File → Share → Publish to web → Applications sheet → CSV
+  const APPS_CSV_URL = 'YOUR_GOOGLE_SHEET_APPLICATIONS_CSV_URL';
+  // Example: https://docs.google.com/spreadsheets/d/11vfhKson68bEs_z1-KalTJpxwD6Xgq6aVEHF84ecFFQ/export?format=csv&gid=SHEET_GID
+
+  buildNav('dashboard');
+
+  // ── Column mapping for Applications tab (A=0 … W=22) ──
+  // Adjust to match your actual sheet columns
+  const AC = {
+    appId:       0,   // A
+    jobId:       1,   // B
+    jobTitle:    2,   // C
+    firstName:   3,   // D
+    lastName:    4,   // E
+    email:       5,   // F
+    phone:       6,   // G
+    location:    7,   // H
+    linkedin:    8,   // I
+    experience:  9,   // J
+    education:   10,  // K
+    currentTitle:11,  // L
+    skills:      12,  // M
+    resumeText:  13,  // N
+    aiOverall:   14,  // O: AI Overall Score
+    aiSkills:    15,  // P: AI Skills Match
+    aiExp:       16,  // Q: AI Experience
+    aiEdu:       17,  // R: AI Education
+    aiRec:       18,  // S: AI Recommendation
+    coverLetter: 19,  // T
+    expectedSal: 20,  // U
+    availability:21,  // V
+    status:      22,  // W
+    submittedAt: 23,  // X
+    source:      24,  // Y
+  };
+
+  // ── Auth ──
+  document.getElementById('passInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkAuth();
+  });
+
+  function checkAuth() {
+    const val = document.getElementById('passInput').value;
+    if (val === ACCESS_CODE) {
+      document.getElementById('authGate').style.display = 'none';
+      document.getElementById('dashContent').style.display = 'block';
+      loadApplications();
+    } else {
+      showToast('Incorrect access code.', 'error');
+      document.getElementById('passInput').value = '';
+    }
+  }
+
+  // ── Data ──
+  let allApps = [];
+  let sortDesc = true;
+  let currentAppIdx = null;
+
+  async function loadApplications() {
+    const list = document.getElementById('appsList');
+    list.innerHTML = `<div class="state-box"><div class="icon">⏳</div><p>Loading applications…</p></div>`;
+
+    if (APPS_CSV_URL === 'YOUR_GOOGLE_SHEET_APPLICATIONS_CSV_URL') {
+      allApps = getDemoApps();
+      renderDashboard();
+      return;
+    }
+
+    try {
+      const res = await fetch(APPS_CSV_URL);
+      if (!res.ok) throw new Error('Fetch failed');
+      const text = await res.text();
+      allApps = parseCSV(text).slice(1);
+      renderDashboard();
+    } catch (e) {
+      list.innerHTML = `<div class="state-box"><div class="icon">⚠️</div><p>Could not load. Set APPS_CSV_URL in dashboard.html.<br/><small>${e.message}</small></p></div>`;
+    }
+  }
+
+  function renderDashboard() {
+    // Stats
+    const total       = allApps.length;
+    const newApps     = allApps.filter(a => !a[AC.status] || a[AC.status] === 'New').length;
+    const shortlisted = allApps.filter(a => a[AC.status] === 'Shortlisted').length;
+    const scores      = allApps.map(a => parseInt(a[AC.aiOverall])).filter(n => !isNaN(n));
+    const avgScore    = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : '—';
+
+    document.getElementById('statTotal').textContent     = total;
+    document.getElementById('statNew').textContent       = newApps;
+    document.getElementById('statAvgScore').textContent  = avgScore;
+    document.getElementById('statShortlisted').textContent = shortlisted;
+    document.getElementById('dashSubtitle').textContent  = `${total} application${total!==1?'s':''} · last refreshed ${new Date().toLocaleTimeString()}`;
+
+    // Populate job filter
+    const jobs = [...new Set(allApps.map(a => a[AC.jobTitle]).filter(Boolean))];
+    const jf = document.getElementById('appJobFilter');
+    jf.innerHTML = `<option value="">All Roles</option>` + jobs.map(j => `<option>${j}</option>`).join('');
+
+    renderList();
+  }
+
+  function renderList() {
+    const search    = document.getElementById('appSearch').value.toLowerCase();
+    const jobFilter = document.getElementById('appJobFilter').value;
+    const statusF   = document.getElementById('appStatusFilter').value;
+    const list      = document.getElementById('appsList');
+
+    let filtered = allApps.filter(a => {
+      const hay = `${a[AC.firstName]} ${a[AC.lastName]} ${a[AC.jobTitle]} ${a[AC.skills]} ${a[AC.email]}`.toLowerCase();
+      return (!search    || hay.includes(search))
+          && (!jobFilter || a[AC.jobTitle] === jobFilter)
+          && (!statusF   || a[AC.status] === statusF);
+    });
+
+    // Sort by AI score
+    filtered.sort((a,b) => {
+      const sa = parseInt(a[AC.aiOverall]) || 0;
+      const sb = parseInt(b[AC.aiOverall]) || 0;
+      return sortDesc ? sb - sa : sa - sb;
+    });
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="state-box"><div class="icon">🔍</div><p>No applications match your filters.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map((a, i) => {
+      const name    = `${a[AC.firstName] || ''} ${a[AC.lastName] || ''}`.trim() || 'Unknown';
+      const score   = parseInt(a[AC.aiOverall]);
+      const status  = a[AC.status] || 'New';
+      const statusCls = {
+        'New': 'status-new',
+        'Reviewed': 'status-reviewed',
+        'Shortlisted': 'status-shortlisted',
+        'Rejected': 'status-rejected',
+      }[status] || 'status-new';
+
+      return `
+      <div class="app-row" onclick="openDrawer(${allApps.indexOf(a)})">
+        ${scoreRing(score)}
+        <div class="app-main">
+          <div class="app-name">${esc(name)}</div>
+          <div class="app-meta">
+            <span class="app-meta-item">💼 ${esc(a[AC.jobTitle]) || 'Unknown Role'}</span>
+            ${a[AC.experience] ? `<span class="app-meta-item">⏱ ${esc(a[AC.experience])}</span>` : ''}
+            ${a[AC.location]   ? `<span class="app-meta-item">📍 ${esc(a[AC.location])}</span>` : ''}
+            ${a[AC.submittedAt]? `<span class="app-meta-item">📅 ${formatDate(a[AC.submittedAt])}</span>` : ''}
+          </div>
+        </div>
+        <div class="app-right">
+          <span class="status-pill ${statusCls}">${status}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Filters ──
+  document.getElementById('appSearch').addEventListener('input', renderList);
+  document.getElementById('appJobFilter').addEventListener('change', renderList);
+  document.getElementById('appStatusFilter').addEventListener('change', renderList);
+
+  function toggleSort() {
+    sortDesc = !sortDesc;
+    const btn = document.getElementById('sortScoreBtn');
+    btn.textContent = `Sort: AI Score ${sortDesc ? '↓' : '↑'}`;
+    btn.classList.toggle('active', true);
+    renderList();
+  }
+
+  // ── Drawer ──
+  function openDrawer(idx) {
+    currentAppIdx = idx;
+    const a = allApps[idx];
+    if (!a) return;
+
+    const name = `${a[AC.firstName] || ''} ${a[AC.lastName] || ''}`.trim() || 'Applicant';
+
+    document.getElementById('dName').textContent = name;
+    document.getElementById('dRole').textContent = a[AC.jobTitle] || 'Unknown Role';
+
+    document.getElementById('dMeta').innerHTML = `
+      ${a[AC.experience] ? `<span class="job-meta-item">⏱ ${esc(a[AC.experience])}</span>` : ''}
+      ${a[AC.education]  ? `<span class="badge badge-type">${esc(a[AC.education])}</span>` : ''}
+      ${a[AC.location]   ? `<span class="job-meta-item">📍 ${esc(a[AC.location])}</span>` : ''}
+      ${a[AC.availability] ? `<span class="job-meta-item">🟢 ${esc(a[AC.availability])}</span>` : ''}
+    `;
+
+    // Scores
+    const scoreFields = [
+      { label: 'Overall',   val: a[AC.aiOverall] },
+      { label: 'Skills',    val: a[AC.aiSkills] },
+      { label: 'Experience',val: a[AC.aiExp] },
+      { label: 'Education', val: a[AC.aiEdu] },
+    ];
+
+    document.getElementById('dScores').innerHTML = scoreFields.map(sf => {
+      const n = parseInt(sf.val);
+      const cls = n >= 75 ? 'score-high-val' : n >= 50 ? 'score-mid-val' : isNaN(n) ? '' : 'score-low-val';
+      return `<div class="score-box">
+        <div class="sb-val ${cls}">${isNaN(n) ? '—' : n}</div>
+        <div class="sb-label">${sf.label}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('dRec').textContent  = a[AC.aiRec] || 'No AI recommendation yet.';
+    document.getElementById('dResume').textContent = a[AC.resumeText] || 'Not provided.';
+
+    const cover = a[AC.coverLetter];
+    document.getElementById('dCoverSection').style.display = cover ? 'block' : 'none';
+    document.getElementById('dCover').textContent = cover || '';
+
+    document.getElementById('dContact').innerHTML = `
+      📧 <a href="mailto:${esc(a[AC.email])}" style="color:var(--orange)">${esc(a[AC.email]) || '—'}</a><br>
+      📱 ${esc(a[AC.phone]) || '—'}<br>
+      ${a[AC.linkedin] ? `🔗 <a href="${esc(a[AC.linkedin])}" target="_blank" style="color:var(--purple-light)">LinkedIn Profile</a><br>` : ''}
+      💰 ${esc(a[AC.expectedSal]) || 'Not specified'}
+    `;
+
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    currentAppIdx = null;
+  }
+
+  document.getElementById('drawerOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeDrawer();
+  });
+
+  function updateStatus(newStatus) {
+    if (currentAppIdx === null) return;
+    allApps[currentAppIdx][AC.status] = newStatus;
+    showToast(`Status updated to "${newStatus}"`, 'success');
+    renderList();
+    // Note: to persist this to Google Sheets you'd call a Make webhook here
+  }
+
+  // ── Export ──
+  function exportCSV() {
+    const headers = ['Name','Email','Phone','Role','Experience','Location','AI Score','Skills Match','Exp Score','Edu Score','Status','Submitted','AI Recommendation'];
+    const rows = allApps.map(a => [
+      `${a[AC.firstName]} ${a[AC.lastName]}`,
+      a[AC.email], a[AC.phone], a[AC.jobTitle], a[AC.experience],
+      a[AC.location], a[AC.aiOverall], a[AC.aiSkills], a[AC.aiExp],
+      a[AC.aiEdu], a[AC.status] || 'New', a[AC.submittedAt], a[AC.aiRec]
+    ].map(v => `"${(v||'').replace(/"/g,'""')}"`));
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `hiregenie-applications-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    showToast('CSV downloaded!', 'success');
+  }
+
+  // ── Utils ──
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function parseCSV(text) {
+    const rows = [];
+    let cur = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+        else if (ch === '"') inQ = false;
+        else field += ch;
+      } else {
+        if (ch === '"') inQ = true;
+        else if (ch === ',') { cur.push(field); field = ''; }
+        else if (ch === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; }
+        else if (ch === '\r') {}
+        else field += ch;
+      }
+    }
+    if (field || cur.length) { cur.push(field); rows.push(cur); }
+    return rows;
+  }
+
+  // ── Demo data ──
+  function getDemoApps() {
+    return [
+      ['APP001','JOB001','Senior Frontend Engineer','Arjun','Krishnamurthy','arjun.k@email.com','+91 9876543210','Hyderabad','https://linkedin.com/in/arjun','5–8 years','Master\'s Degree','Senior Dev at Wipro','React, TypeScript, GraphQL, Node.js, AWS, Docker','10 years experience in frontend development with expertise in React and TypeScript. Led team of 6 at Wipro. Built micro-frontend architecture serving 2M daily users. MSc Computer Science from IIT Hyderabad.','88','85','90','82','Strong candidate. Excellent technical skills, leadership experience, and relevant education. Recommend immediate interview.','I am excited about this role because it aligns perfectly with my 10 years building scalable React applications.','₹22,00,000','2 weeks','Shortlisted','2025-06-20T10:30:00Z','HireGenie Job Board'],
+      ['APP002','JOB001','Senior Frontend Engineer','Divya','Menon','divya.m@email.com','+91 8765432109','Bangalore','https://linkedin.com/in/divya','3–5 years','Bachelor\'s Degree','Frontend Lead at Freshworks','React, Vue.js, CSS, JavaScript, Figma','5 years frontend development. Currently leading frontend at Freshworks. Strong in design systems and accessibility. BS from NIT Trichy.','74','78','72','68','Good candidate with solid frontend experience. Slightly below seniority requirement but strong skills.','','₹18,00,000','1 month','Reviewed','2025-06-19T14:20:00Z','LinkedIn'],
+      ['APP003','JOB002','Product Manager — Growth','Kavitha','Subramaniam','kavitha.s@email.com','+91 7654321098','Mumbai','','3–5 years','MBA','Growth PM at Swiggy','Product Management, SQL, A/B Testing, Data Analysis, PLG','4 years PM experience at Swiggy managing growth funnels. Drove 35% improvement in DAU through PLG initiatives. MBA from IIM Bangalore.','91','88','94','95','Exceptional candidate. Perfect skills alignment, top-tier education, and impressive quantified achievements. Strong hire.','','₹26,00,000','Immediately','Shortlisted','2025-06-21T09:15:00Z','Referral'],
+      ['APP004','JOB003','UX Designer','Ravi','Nair','ravi.n@email.com','+91 6543210987','Remote','https://linkedin.com/in/ravi','1–3 years','Bachelor\'s Degree','UX Designer at freelance','Figma, Sketch, User Research, Prototyping','2 years UX experience mainly freelance. Good portfolio for B2B SaaS. Some gaps in complex system design.','58','62','50','60','Borderline candidate. Shows promise but lacks the 3+ years specified. Worth reviewing portfolio before deciding.','','₹10,00,000','Immediately','New','2025-06-22T07:00:00Z','HireGenie Job Board'],
+      ['APP005','JOB004','Data Scientist','Preethi','Chandrasekaran','preethi.c@email.com','+91 5432109876','Chennai','https://linkedin.com/in/preethi','3–5 years','Master\'s Degree','Data Scientist at TCS','Python, scikit-learn, TensorFlow, SQL, MLOps, Airflow','4 years DS experience at TCS. Built churn prediction model (87% accuracy, $2M retention). MLOps pipeline with Airflow. MS Data Science from Anna University.','83','87','80','88','Strong technical candidate. Great ML engineering skills, solid Python, and relevant domain experience. Recommend interview.','','₹19,00,000','2 months','New','2025-06-18T11:45:00Z','Company Website'],
+    ];
+  }
+</script>
+</body>
+</html>

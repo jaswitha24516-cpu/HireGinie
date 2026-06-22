@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Apply — HireGenie Talent Cloud</title>
+  <meta name="description" content="Submit your application. Our AI scores your resume instantly."/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .apply-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 2rem;
+      align-items: start;
+      padding: 2rem 0 4rem;
+    }
+
+    @media (max-width: 860px) {
+      .apply-layout { grid-template-columns: 1fr; }
+      .apply-sidebar { order: -1; }
+    }
+
+    .apply-form-card {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    .apply-form-card h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .apply-form-card .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--orange);
+      font-weight: 600;
+      margin: 1.8rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Sidebar */
+    .apply-sidebar {
+      position: sticky;
+      top: 80px;
+    }
+
+    .info-card {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .info-card h4 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .how-step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--gradient-h);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .step-text span { font-size: 12px; color: var(--text-muted); }
+
+    .ai-badge-card {
+      background: linear-gradient(135deg, rgba(107,63,160,0.15), rgba(232,39,42,0.08));
+      border: 1px solid rgba(107,63,160,0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .ai-badge-card .ai-icon { font-size: 2rem; margin-bottom: 8px; }
+    .ai-badge-card h4 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .ai-badge-card p { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+    /* Submit area */
+    .submit-area {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .submit-btn {
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .privacy-note {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+
+    /* Success state */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+    .success-screen .big-icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    .success-screen h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+    .success-screen p { color: var(--text-muted); font-size: 15px; max-width: 380px; margin: 0 auto 2rem; }
+
+    input[type="file"] {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    input[type="file"]:hover { border-color: var(--purple); }
+
+    .char-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .required-star { color: var(--red); margin-left: 2px; }
+  </style>
+</head>
+<body>
+
+<nav></nav>
+
+<div class="container">
+  <div class="apply-layout">
+
+    <!-- Form -->
+    <div>
+      <div class="apply-form-card">
+        <h2>Submit Your Application</h2>
+        <p class="subtitle">Takes about 5 minutes. Our AI reviews every application within 24 hours.</p>
+
+        <!-- Success screen (hidden until submit) -->
+        <div class="success-screen" id="successScreen">
+          <div class="big-icon">🎉</div>
+          <h2>Application Received!</h2>
+          <p>Your application is in the queue. Our AI will score your resume and hiring managers will be in touch shortly.</p>
+          <a href="index.html" class="btn btn-primary btn-lg">Browse More Roles →</a>
+        </div>
+
+        <form id="applyForm" novalidate>
+
+          <!-- Role -->
+          <div class="section-label">Role Details</div>
+
+          <div class="form-group">
+            <label>Position Applying For <span class="required-star">*</span></label>
+            <input type="text" name="jobTitle" id="jobTitle" required placeholder="e.g. Senior Frontend Engineer"/>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Job ID <span style="font-size:11px;color:var(--text-muted)">(optional)</span></label>
+              <input type="text" name="jobId" id="jobId" placeholder="e.g. JOB001"/>
+            </div>
+            <div class="form-group">
+              <label>Source <span class="required-star">*</span></label>
+              <select name="source" required>
+                <option value="">How did you find us?</option>
+                <option>HireGenie Job Board</option>
+                <option>LinkedIn</option>
+                <option>Referral</option>
+                <option>Company Website</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Personal -->
+          <div class="section-label">Personal Information</div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>First Name <span class="required-star">*</span></label>
+              <input type="text" name="firstName" required placeholder="Priya"/>
+            </div>
+            <div class="form-group">
+              <label>Last Name <span class="required-star">*</span></label>
+              <input type="text" name="lastName" required placeholder="Sharma"/>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Email Address <span class="required-star">*</span></label>
+              <input type="email" name="email" required placeholder="priya@example.com"/>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" name="phone" placeholder="+91 98765 43210"/>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>City / Location <span class="required-star">*</span></label>
+              <input type="text" name="location" required placeholder="Hyderabad, Telangana"/>
+            </div>
+            <div class="form-group">
+              <label>LinkedIn Profile</label>
+              <input type="url" name="linkedin" placeholder="https://linkedin.com/in/yourname"/>
+            </div>
+          </div>
+
+          <!-- Experience -->
+          <div class="section-label">Experience & Skills</div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Years of Experience <span class="required-star">*</span></label>
+              <select name="experience" required>
+                <option value="">Select…</option>
+                <option>0–1 years</option>
+                <option>1–3 years</option>
+                <option>3–5 years</option>
+                <option>5–8 years</option>
+                <option>8–12 years</option>
+                <option>12+ years</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Highest Qualification <span class="required-star">*</span></label>
+              <select name="education" required>
+                <option value="">Select…</option>
+                <option>High School</option>
+                <option>Diploma</option>
+                <option>Bachelor's Degree</option>
+                <option>Master's Degree</option>
+                <option>MBA</option>
+                <option>PhD</option>
+                <option>Self-taught / Bootcamp</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Current / Most Recent Job Title</label>
+            <input type="text" name="currentTitle" placeholder="e.g. Frontend Developer at Infosys"/>
+          </div>
+
+          <div class="form-group">
+            <label>Key Skills <span class="required-star">*</span></label>
+            <input type="text" name="skills" required placeholder="React, TypeScript, Node.js, AWS, Figma…"/>
+          </div>
+
+          <div class="form-group">
+            <label>Portfolio / GitHub / Website</label>
+            <input type="url" name="portfolio" placeholder="https://github.com/yourname"/>
+          </div>
+
+          <!-- Resume & Cover -->
+          <div class="section-label">Resume & Cover Letter</div>
+
+          <div class="form-group">
+            <label>Paste Your Resume / CV <span class="required-star">*</span><br/>
+              <span style="font-size:11px;color:var(--text-muted)">Plain text works best for AI scoring. Max 3,000 words.</span>
+            </label>
+            <textarea name="resumeText" id="resumeText" rows="10" required
+              placeholder="Paste your full resume here — work experience, skills, education, achievements…"></textarea>
+            <div class="char-count" id="charCount">0 / 3000 words</div>
+          </div>
+
+          <div class="form-group">
+            <label>Cover Letter <span style="font-size:11px;color:var(--text-muted)">(optional but recommended)</span></label>
+            <textarea name="coverLetter" rows="5"
+              placeholder="Why are you excited about this role? What makes you a great fit?"></textarea>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Expected Salary (Annual)</label>
+              <input type="text" name="expectedSalary" placeholder="e.g. ₹18,00,000"/>
+            </div>
+            <div class="form-group">
+              <label>Availability / Notice Period</label>
+              <select name="availability">
+                <option value="">Select…</option>
+                <option>Immediately</option>
+                <option>2 weeks</option>
+                <option>1 month</option>
+                <option>2 months</option>
+                <option>3 months</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="submit-area">
+            <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">
+              Submit Application ✦
+            </button>
+            <p class="privacy-note">🔒 Your data is processed securely and used only for this application.</p>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="apply-sidebar">
+      <div class="ai-badge-card" style="margin-bottom:1rem;">
+        <div class="ai-icon">🤖</div>
+        <h4>AI-Scored in 24 hrs</h4>
+        <p>Every application is scored by Groq AI on skills match, experience fit, and resume quality. Recruiters see your score alongside your application.</p>
+      </div>
+
+      <div class="info-card">
+        <h4>How It Works</h4>
+        <div class="how-step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>You Apply</strong>
+            <span>Fill this form — takes ~5 min</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>AI Reviews</strong>
+            <span>Groq AI scores your resume vs. the role</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Recruiter Reviews</strong>
+            <span>Hiring manager sees ranked applicants</span>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            <strong>You Hear Back</strong>
+            <span>Expect a response within 3–5 days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h4>Tips for a Strong Application</h4>
+        <ul style="list-style:none;padding:0;">
+          <li style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">✦ Paste your full resume — more context means better scoring</li>
+          <li style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">✦ List all relevant skills, even if not on your formal resume</li>
+          <li style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">✦ Include measurable achievements ("grew revenue 40%")</li>
+          <li style="font-size:13px;color:var(--text-muted);">✦ A short cover letter doubles your interview chances</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  © 2025 HireGenie Talent Cloud · Built on GitHub Pages · AI Scoring by Groq
+</footer>
+
+<script src="js/shared.js"></script>
+<script>
+  // ── CONFIG ── Paste your Make.com webhook URL here ──
+  const WEBHOOK_URL = 'YOUR_MAKE_WEBHOOK_URL';
+  // Example: https://hook.eu1.make.com/abcdef1234567890
+
+  buildNav('apply');
+
+  // Pre-fill job from URL params
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('job')) {
+    document.getElementById('jobTitle').value = decodeURIComponent(params.get('job'));
+  }
+  if (params.get('id')) {
+    document.getElementById('jobId').value = decodeURIComponent(params.get('id'));
+  }
+
+  // Word count on resume textarea
+  const resumeTA = document.getElementById('resumeText');
+  const charCount = document.getElementById('charCount');
+  resumeTA.addEventListener('input', () => {
+    const words = resumeTA.value.trim().split(/\s+/).filter(Boolean).length;
+    charCount.textContent = `${words.toLocaleString()} / 3,000 words`;
+    charCount.style.color = words > 3000 ? 'var(--red)' : 'var(--text-muted)';
+  });
+
+  // Form submit
+  document.getElementById('applyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const btn  = document.getElementById('submitBtn');
+
+    // Basic validation
+    const required = form.querySelectorAll('[required]');
+    let valid = true;
+    required.forEach(el => {
+      el.style.borderColor = '';
+      if (!el.value.trim()) {
+        el.style.borderColor = 'var(--red)';
+        valid = false;
+      }
+    });
+
+    if (!valid) {
+      showToast('Please fill in all required fields.', 'error');
+      form.querySelector('[required]:invalid, [required][style*="red"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // Collect data
+    const data = Object.fromEntries(new FormData(form));
+    data.submittedAt = new Date().toISOString();
+    data.source = data.source || 'HireGenie Job Board';
+
+    // Loading state
+    btn.innerHTML = `<span class="spinner"></span> Submitting…`;
+    btn.disabled = true;
+
+    if (WEBHOOK_URL === 'YOUR_MAKE_WEBHOOK_URL') {
+      // Demo mode — simulate success
+      await new Promise(r => setTimeout(r, 1800));
+      showSuccess();
+      return;
+    }
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showSuccess();
+    } catch (err) {
+      btn.innerHTML = 'Submit Application ✦';
+      btn.disabled = false;
+      showToast('Submission failed. Please try again or email us directly.', 'error');
+      console.error(err);
+    }
+  });
+
+  function showSuccess() {
+    document.getElementById('applyForm').style.display = 'none';
+    const s = document.getElementById('successScreen');
+    s.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

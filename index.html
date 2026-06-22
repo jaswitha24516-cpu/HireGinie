@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HireGenie Talent Cloud — Job Board</title>
+  <meta name="description" content="Browse open roles and apply instantly. AI-powered hiring at zero cost."/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* ── Page-specific ── */
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .filters input[type="text"] {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .filters select { width: 160px; flex-shrink: 0; }
+
+    .jobs-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+    }
+
+    .jobs-meta strong { color: var(--text); }
+
+    /* Job card */
+    .job-card {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: start;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .job-card:hover {
+      border-color: rgba(107,63,160,0.65);
+      transform: translateY(-2px);
+    }
+
+    .job-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .job-company {
+      font-size: 13px;
+      color: var(--orange);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .job-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .job-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .job-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .job-card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      min-width: 120px;
+    }
+
+    .job-salary {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      text-align: right;
+    }
+
+    .job-posted {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* Empty / loading states */
+    .state-box {
+      text-align: center;
+      padding: 5rem 2rem;
+      color: var(--text-muted);
+    }
+    .state-box .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .state-box p { font-size: 14px; max-width: 320px; margin: 0 auto; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--dark-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 2rem;
+      transform: translateY(20px);
+      transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .modal-section { margin-bottom: 1.5rem; }
+    .modal-section h4 {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .modal-section p, .modal-section ul {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .modal-section ul { padding-left: 1.2rem; }
+    .modal-section li { margin-bottom: 4px; }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav></nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">✦ AI-Powered Hiring</div>
+  <h1>Find your next<br/><span>great opportunity</span></h1>
+  <p class="hero-sub">Every role scored by AI. Apply in minutes. Get matched fast.</p>
+</div>
+
+<div class="container">
+  <div class="section">
+
+    <!-- Filters -->
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="🔍  Search by title, company, or skill…"/>
+      <select id="typeFilter">
+        <option value="">All Types</option>
+        <option>Full-time</option>
+        <option>Part-time</option>
+        <option>Contract</option>
+        <option>Internship</option>
+        <option>Remote</option>
+      </select>
+      <select id="deptFilter">
+        <option value="">All Departments</option>
+        <option>Engineering</option>
+        <option>Design</option>
+        <option>Marketing</option>
+        <option>Sales</option>
+        <option>Operations</option>
+        <option>Finance</option>
+        <option>HR</option>
+        <option>Product</option>
+      </select>
+    </div>
+
+    <div class="jobs-meta" id="jobsMeta">Loading roles…</div>
+
+    <div id="jobsList"></div>
+
+  </div>
+</div>
+
+<!-- Job Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="jobModal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="mTitle"></div>
+        <div class="job-company" id="mCompany"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="job-meta" id="mMeta"></div>
+    <div class="divider"></div>
+
+    <div class="modal-section" id="mDescSection">
+      <h4>About the role</h4>
+      <p id="mDesc"></p>
+    </div>
+
+    <div class="modal-section" id="mReqSection">
+      <h4>Requirements</h4>
+      <p id="mReq"></p>
+    </div>
+
+    <div class="modal-section" id="mBenSection">
+      <h4>Benefits</h4>
+      <p id="mBen"></p>
+    </div>
+
+    <div class="modal-actions">
+      <a class="btn btn-primary btn-lg" id="mApplyBtn" href="apply.html">Apply for This Role ↗</a>
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2025 HireGenie Talent Cloud · Built on GitHub Pages · AI Scoring by Groq
+</footer>
+
+<script src="js/shared.js"></script>
+<script>
+  // ── CONFIG ── Replace with your published Google Sheet CSV URL ──
+  // File → Share → Publish to web → Jobs sheet → CSV
+  const SHEET_CSV_URL = 'YOUR_GOOGLE_SHEET_JOBS_CSV_URL';
+  // Example: https://docs.google.com/spreadsheets/d/11vfhKson68bEs_z1-KalTJpxwD6Xgq6aVEHF84ecFFQ/export?format=csv&gid=0
+
+  buildNav('jobs');
+
+  let allJobs = [];
+
+  // ── Column mapping (adjust to match your sheet) ──
+  // A=0 B=1 C=2 … R=17
+  const COL = {
+    id:          0,   // A: Job ID
+    title:       1,   // B: Job Title
+    company:     2,   // C: Company
+    dept:        3,   // D: Department
+    type:        4,   // E: Job Type
+    location:    5,   // F: Location
+    remote:      6,   // G: Remote (Yes/No)
+    salaryMin:   7,   // H: Salary Min
+    salaryMax:   8,   // I: Salary Max
+    currency:    9,   // J: Currency
+    description: 10,  // K: Description
+    requirements:11,  // L: Requirements
+    benefits:    12,  // M: Benefits
+    posted:      13,  // N: Date Posted
+    deadline:    14,  // O: Application Deadline
+    status:      15,  // P: Status
+    hiringMgr:   16,  // Q: Hiring Manager
+    slots:       17,  // R: Open Slots
+  };
+
+  async function loadJobs() {
+    const list = document.getElementById('jobsList');
+    const meta = document.getElementById('jobsMeta');
+
+    // DEMO DATA — remove once your Sheet CSV URL is set
+    if (SHEET_CSV_URL === 'YOUR_GOOGLE_SHEET_JOBS_CSV_URL') {
+      allJobs = getDemoJobs();
+      renderJobs(allJobs);
+      return;
+    }
+
+    try {
+      const res = await fetch(SHEET_CSV_URL);
+      if (!res.ok) throw new Error('Sheet fetch failed');
+      const text = await res.text();
+      const rows = parseCSV(text).slice(1); // skip header
+      allJobs = rows.filter(r => r[COL.status]?.toLowerCase() === 'active' || !r[COL.status]);
+      renderJobs(allJobs);
+    } catch (e) {
+      list.innerHTML = `<div class="state-box"><div class="icon">⚠️</div><p>Could not load jobs. Check your Sheet CSV URL in index.html.</p></div>`;
+      meta.textContent = '';
+    }
+  }
+
+  function renderJobs(jobs) {
+    const meta = document.getElementById('jobsMeta');
+    const list = document.getElementById('jobsList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const type   = document.getElementById('typeFilter').value;
+    const dept   = document.getElementById('deptFilter').value;
+
+    let filtered = jobs.filter(j => {
+      const hay = `${j[COL.title]} ${j[COL.company]} ${j[COL.dept]} ${j[COL.description]}`.toLowerCase();
+      const matchSearch = !search || hay.includes(search);
+      const matchType   = !type   || j[COL.type] === type;
+      const matchDept   = !dept   || j[COL.dept] === dept;
+      return matchSearch && matchType && matchDept;
+    });
+
+    meta.innerHTML = `Showing <strong>${filtered.length}</strong> open role${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="state-box"><div class="icon">🔍</div><p>No roles match your filters. Try broadening your search.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map((j, i) => {
+      const salary = j[COL.salaryMin] && j[COL.salaryMax]
+        ? `${j[COL.currency] || '$'}${Number(j[COL.salaryMin]).toLocaleString()}–${Number(j[COL.salaryMax]).toLocaleString()}`
+        : j[COL.salaryMin] ? `From ${j[COL.currency] || '$'}${Number(j[COL.salaryMin]).toLocaleString()}` : 'Competitive';
+
+      const isNew = isRecentlyPosted(j[COL.posted]);
+
+      return `
+      <div class="job-card" onclick="openModal(${i})" data-idx="${i}">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div class="job-title">${esc(j[COL.title]) || 'Open Role'}</div>
+            ${isNew ? '<span class="badge badge-new">New</span>' : ''}
+          </div>
+          <div class="job-company">${esc(j[COL.company]) || 'HireGenie Client'}</div>
+          <div class="job-meta">
+            ${j[COL.location] ? `<span class="job-meta-item">📍 ${esc(j[COL.location])}</span>` : ''}
+            ${j[COL.type]     ? `<span class="badge badge-type">${esc(j[COL.type])}</span>` : ''}
+            ${j[COL.remote]?.toLowerCase() === 'yes' ? `<span class="badge badge-remote">Remote OK</span>` : ''}
+            ${j[COL.dept]     ? `<span class="job-meta-item">🏢 ${esc(j[COL.dept])}</span>` : ''}
+          </div>
+          <div class="job-desc">${esc(j[COL.description]) || 'Click to view full job details and requirements.'}</div>
+        </div>
+        <div class="job-card-right">
+          <div class="job-salary">${salary}</div>
+          <div class="job-posted">${formatDate(j[COL.posted]) || 'Open'}</div>
+          <span class="btn btn-primary btn-sm" style="pointer-events:none;">Apply →</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Modal ──
+  let currentJobs = [];
+  function openModal(idx) {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const type   = document.getElementById('typeFilter').value;
+    const dept   = document.getElementById('deptFilter').value;
+
+    const filtered = allJobs.filter(j => {
+      const hay = `${j[COL.title]} ${j[COL.company]} ${j[COL.dept]} ${j[COL.description]}`.toLowerCase();
+      return (!search || hay.includes(search)) && (!type || j[COL.type] === type) && (!dept || j[COL.dept] === dept);
+    });
+
+    const j = filtered[idx];
+    if (!j) return;
+
+    const salary = j[COL.salaryMin] && j[COL.salaryMax]
+      ? `${j[COL.currency] || '$'}${Number(j[COL.salaryMin]).toLocaleString()} – ${Number(j[COL.salaryMax]).toLocaleString()}/yr`
+      : 'Competitive';
+
+    document.getElementById('mTitle').textContent = j[COL.title] || 'Open Role';
+    document.getElementById('mCompany').textContent = j[COL.company] || '';
+    document.getElementById('mDesc').textContent = j[COL.description] || 'Details available upon application.';
+    document.getElementById('mReq').textContent  = j[COL.requirements] || 'Please apply to learn more.';
+    document.getElementById('mBen').textContent  = j[COL.benefits] || 'Competitive package.';
+
+    document.getElementById('mMeta').innerHTML = `
+      ${j[COL.location] ? `<span class="job-meta-item">📍 ${esc(j[COL.location])}</span>` : ''}
+      ${j[COL.type]     ? `<span class="badge badge-type">${esc(j[COL.type])}</span>` : ''}
+      ${j[COL.remote]?.toLowerCase() === 'yes' ? `<span class="badge badge-remote">Remote OK</span>` : ''}
+      <span class="job-meta-item">💰 ${salary}</span>
+      ${j[COL.deadline] ? `<span class="job-meta-item">⏰ Deadline: ${formatDate(j[COL.deadline])}</span>` : ''}
+    `;
+
+    // Pass job title to apply page
+    const jobTitle = encodeURIComponent(j[COL.title] || '');
+    document.getElementById('mApplyBtn').href = `apply.html?job=${jobTitle}&id=${encodeURIComponent(j[COL.id] || '')}`;
+
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // ── Filters ──
+  document.getElementById('searchInput').addEventListener('input', () => renderJobs(allJobs));
+  document.getElementById('typeFilter').addEventListener('change', () => renderJobs(allJobs));
+  document.getElementById('deptFilter').addEventListener('change', () => renderJobs(allJobs));
+
+  // ── Utils ──
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function isRecentlyPosted(dateStr) {
+    if (!dateStr) return false;
+    const diff = (Date.now() - new Date(dateStr)) / 86400000;
+    return diff <= 7;
+  }
+
+  function parseCSV(text) {
+    const rows = [];
+    let cur = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+        else if (ch === '"') inQ = false;
+        else field += ch;
+      } else {
+        if (ch === '"') inQ = true;
+        else if (ch === ',') { cur.push(field); field = ''; }
+        else if (ch === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; }
+        else if (ch === '\r') {}
+        else field += ch;
+      }
+    }
+    if (field || cur.length) { cur.push(field); rows.push(cur); }
+    return rows;
+  }
+
+  // ── Demo data ──
+  function getDemoJobs() {
+    return [
+      ['JOB001','Senior Frontend Engineer','TechCorp','Engineering','Full-time','Hyderabad, IN','Yes','1800000','2500000','₹','Build scalable React applications and design systems for our product suite. You will work closely with design and backend teams.','5+ years React, TypeScript, GraphQL. Strong CS fundamentals. Experience with micro-frontends a plus.','Health insurance, 30 days PTO, remote-first, stock options, L&D budget','2025-06-18','2025-07-31','Active','Priya Sharma','2'],
+      ['JOB002','Product Manager — Growth','ScaleUp Inc','Product','Full-time','Bangalore, IN','No','2000000','2800000','₹','Own the growth funnel end-to-end: acquisition, activation, retention. Partner with engineering on a/b tests and ship metrics-driven features.','3+ years PM experience, data-driven mindset, SQL, familiarity with PLG motions.','ESOP, annual bonus, flexible hours, team offsites','2025-06-15','2025-07-15','Active','Rahul Mehta','1'],
+      ['JOB003','UX Designer','Pixels & Co','Design','Contract','Remote','Yes','800000','1200000','₹','Design user-centric experiences for B2B SaaS products. Own research, wireframes, prototypes, and handoff.','Figma expert, 3+ years UX, portfolio demonstrating complex flows.','Flexible contract, competitive day rate, potential to convert full-time','2025-06-20','2025-08-01','Active','Ananya Rao','1'],
+      ['JOB004','Data Scientist','Analytix','Engineering','Full-time','Mumbai, IN','Yes','1600000','2200000','₹','Build ML models for churn prediction, LTV estimation, and recommendation engines. Collaborate with product and analysts.','Python, scikit-learn, SQL, 2+ years industry ML. MLOps experience preferred.','WFH stipend, health for family, 4-day week pilot','2025-06-10','2025-07-20','Active','Vijay Kumar','2'],
+      ['JOB005','Sales Development Rep','GrowthBase','Sales','Full-time','Delhi, IN','No','600000','900000','₹','Prospect and qualify outbound leads for our enterprise SaaS. Run high-volume, personalised outreach via LinkedIn and email.','1+ year SDR/BDR experience, strong communication, CRM familiarity.','Uncapped commission, rapid promotion path, full benefits','2025-06-22','2025-08-15','Active','Sneha Patel','3'],
+    ];
+  }
+
+  loadJobs();
+</script>
+</body>
+</html>
