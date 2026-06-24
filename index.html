@@ -370,11 +370,9 @@
     }
 
     list.innerHTML = filtered.map((j, i) => {
-      const salary = j[COL.salaryMin] && j[COL.salaryMax]
-        ? `${j[COL.currency] || '$'}${Number(j[COL.salaryMin]).toLocaleString()}–${Number(j[COL.salaryMax]).toLocaleString()}`
-        : j[COL.salaryMin] ? `From ${j[COL.currency] || '$'}${Number(j[COL.salaryMin]).toLocaleString()}` : 'Competitive';
-
       const isNew = isRecentlyPosted(j[COL.posted]);
+      // Anonymous company label based on department
+      const anonLabel = anonymousCompany(j[COL.dept]);
 
       return `
       <div class="job-card" onclick="openModal(${i})" data-idx="${i}">
@@ -383,7 +381,7 @@
             <div class="job-title">${esc(j[COL.title]) || 'Open Role'}</div>
             ${isNew ? '<span class="badge badge-new">New</span>' : ''}
           </div>
-          <div class="job-company">${esc(j[COL.company]) || 'HireGenie Client'}</div>
+          <div class="job-company">${anonLabel}</div>
           <div class="job-meta">
             ${j[COL.location] ? `<span class="job-meta-item">📍 ${esc(j[COL.location])}</span>` : ''}
             ${j[COL.type]     ? `<span class="badge badge-type">${esc(j[COL.type])}</span>` : ''}
@@ -393,9 +391,8 @@
           <div class="job-desc">${esc(j[COL.description]) || 'Click to view full job details and requirements.'}</div>
         </div>
         <div class="job-card-right">
-          <div class="job-salary">${salary}</div>
           <div class="job-posted">${formatDate(j[COL.posted]) || 'Open'}</div>
-          <span class="btn btn-primary btn-sm" style="pointer-events:none;">Apply →</span>
+          <span class="btn btn-primary btn-sm" style="pointer-events:none;">View Role →</span>
         </div>
       </div>`;
     }).join('');
@@ -421,7 +418,7 @@
       : 'Competitive';
 
     document.getElementById('mTitle').textContent = j[COL.title] || 'Open Role';
-    document.getElementById('mCompany').textContent = j[COL.company] || '';
+    document.getElementById('mCompany').textContent = anonymousCompany(j[COL.dept]);
     document.getElementById('mDesc').textContent = j[COL.description] || 'Details available upon application.';
     document.getElementById('mReq').textContent  = j[COL.requirements] || 'Please apply to learn more.';
     document.getElementById('mBen').textContent  = j[COL.benefits] || 'Competitive package.';
@@ -430,7 +427,6 @@
       ${j[COL.location] ? `<span class="job-meta-item">📍 ${esc(j[COL.location])}</span>` : ''}
       ${j[COL.type]     ? `<span class="badge badge-type">${esc(j[COL.type])}</span>` : ''}
       ${j[COL.remote]?.toLowerCase() === 'yes' ? `<span class="badge badge-remote">Remote OK</span>` : ''}
-      <span class="job-meta-item">💰 ${salary}</span>
       ${j[COL.deadline] ? `<span class="job-meta-item">⏰ Deadline: ${formatDate(j[COL.deadline])}</span>` : ''}
     `;
 
@@ -489,14 +485,30 @@
     return rows;
   }
 
-  // ── Demo data ──
+  // ── Anonymous company label based on department ──
+  function anonymousCompany(dept) {
+    const map = {
+      'Engineering':  'A Leading Tech Startup',
+      'Design':       'A Growing Product Company',
+      'Marketing':    'A VC-Backed Consumer Brand',
+      'Sales':        'A Fast-Growing SaaS Company',
+      'Operations':   'An Established Operations Firm',
+      'Finance':      'A Leading Fintech Startup',
+      'HR':           'A People-First Organisation',
+      'Product':      'A Series-B Tech Company',
+      'Data':         'An AI-First Analytics Company',
+    };
+    const d = (dept || '').trim();
+    return map[d] || 'A HireGenie Client Company';
+  }
+
   function getDemoJobs() {
     return [
-      ['JOB001','Senior Frontend Engineer','TechCorp','Engineering','Full-time','Hyderabad, IN','Yes','1800000','2500000','₹','Build scalable React applications and design systems for our product suite. You will work closely with design and backend teams.','5+ years React, TypeScript, GraphQL. Strong CS fundamentals. Experience with micro-frontends a plus.','Health insurance, 30 days PTO, remote-first, stock options, L&D budget','2025-06-18','2025-07-31','Active','Priya Sharma','2'],
-      ['JOB002','Product Manager — Growth','ScaleUp Inc','Product','Full-time','Bangalore, IN','No','2000000','2800000','₹','Own the growth funnel end-to-end: acquisition, activation, retention. Partner with engineering on a/b tests and ship metrics-driven features.','3+ years PM experience, data-driven mindset, SQL, familiarity with PLG motions.','ESOP, annual bonus, flexible hours, team offsites','2025-06-15','2025-07-15','Active','Rahul Mehta','1'],
-      ['JOB003','UX Designer','Pixels & Co','Design','Contract','Remote','Yes','800000','1200000','₹','Design user-centric experiences for B2B SaaS products. Own research, wireframes, prototypes, and handoff.','Figma expert, 3+ years UX, portfolio demonstrating complex flows.','Flexible contract, competitive day rate, potential to convert full-time','2025-06-20','2025-08-01','Active','Ananya Rao','1'],
-      ['JOB004','Data Scientist','Analytix','Engineering','Full-time','Mumbai, IN','Yes','1600000','2200000','₹','Build ML models for churn prediction, LTV estimation, and recommendation engines. Collaborate with product and analysts.','Python, scikit-learn, SQL, 2+ years industry ML. MLOps experience preferred.','WFH stipend, health for family, 4-day week pilot','2025-06-10','2025-07-20','Active','Vijay Kumar','2'],
-      ['JOB005','Sales Development Rep','GrowthBase','Sales','Full-time','Delhi, IN','No','600000','900000','₹','Prospect and qualify outbound leads for our enterprise SaaS. Run high-volume, personalised outreach via LinkedIn and email.','1+ year SDR/BDR experience, strong communication, CRM familiarity.','Uncapped commission, rapid promotion path, full benefits','2025-06-22','2025-08-15','Active','Sneha Patel','3'],
+      ['JOB001','Senior Frontend Engineer','Client A','Engineering','Full-time','Hyderabad, IN','Yes','','','₹','Build scalable React applications and design systems for our product suite. You will work closely with design and backend teams.','5+ years React, TypeScript, GraphQL. Strong CS fundamentals. Experience with micro-frontends a plus.','Health insurance, 30 days PTO, remote-first, stock options, L&D budget','2025-06-18','2025-07-31','Active','','2'],
+      ['JOB002','Product Manager — Growth','Client B','Product','Full-time','Bangalore, IN','No','','','₹','Own the growth funnel end-to-end: acquisition, activation, retention. Partner with engineering on a/b tests and ship metrics-driven features.','3+ years PM experience, data-driven mindset, SQL, familiarity with PLG motions.','ESOP, annual bonus, flexible hours, team offsites','2025-06-15','2025-07-15','Active','','1'],
+      ['JOB003','UX Designer','Client C','Design','Contract','Remote','Yes','','','₹','Design user-centric experiences for B2B SaaS products. Own research, wireframes, prototypes, and handoff.','Figma expert, 3+ years UX, portfolio demonstrating complex flows.','Flexible contract, competitive day rate, potential to convert full-time','2025-06-20','2025-08-01','Active','','1'],
+      ['JOB004','Data Scientist','Client D','Engineering','Full-time','Mumbai, IN','Yes','','','₹','Build ML models for churn prediction, LTV estimation, and recommendation engines. Collaborate with product and analysts.','Python, scikit-learn, SQL, 2+ years industry ML. MLOps experience preferred.','WFH stipend, health for family, 4-day week pilot','2025-06-10','2025-07-20','Active','','2'],
+      ['JOB005','Sales Development Rep','Client E','Sales','Full-time','Delhi, IN','No','','','₹','Prospect and qualify outbound leads for our enterprise SaaS. Run high-volume, personalised outreach via LinkedIn and email.','1+ year SDR/BDR experience, strong communication, CRM familiarity.','Uncapped commission, rapid promotion path, full benefits','2025-06-22','2025-08-15','Active','','3'],
     ];
   }
 
