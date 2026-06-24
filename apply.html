@@ -474,18 +474,20 @@
     }
 
     try {
-      const res = await fetch(WEBHOOK_URL, {
+      // Apps Script requires no-cors mode from external origins
+      // With no-cors we can't read the response, so we show success after sending
+      await fetch(WEBHOOK_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(data),
       });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // no-cors always returns opaque response — if no network error, it worked
       showSuccess();
     } catch (err) {
       btn.innerHTML = 'Submit Application ✦';
       btn.disabled = false;
-      showToast('Submission failed. Please try again or email us directly.', 'error');
+      showToast('Submission failed. Check your connection and try again.', 'error');
       console.error(err);
     }
   });
