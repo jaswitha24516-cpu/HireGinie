@@ -1,16 +1,10 @@
 // HireGenie shared components
 
-// Logo: clean wordmark-style H with a spark/genie element
-const LOGO_SVG = `<svg class="logo-h" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="38" height="38" rx="4" fill="#CC0000"/>
-  <!-- Bold H letterform -->
-  <rect x="7" y="8" width="6" height="22" rx="1" fill="white"/>
-  <rect x="25" y="8" width="6" height="22" rx="1" fill="white"/>
-  <rect x="7" y="16" width="24" height="6" rx="1" fill="white"/>
-  <!-- Small genie spark top-right -->
-  <circle cx="31" cy="8" r="3" fill="#FFD700"/>
-  <circle cx="31" cy="8" r="1.5" fill="white"/>
-</svg>`;
+// Logo: HireGinie geometric arrow-H — two red chevron/arrow shapes forming an H
+// Left shape: right-pointing arrow chevron
+// Right shape: left-pointing arrow chevron (mirrored)
+// Together they create the distinctive H with inward-pointing notches
+const LOGO_SVG = `<img src="hireginie_logo.png" alt="HireGinie Logo" style="height:44px;width:auto;object-fit:contain;"/>`;
 
 function buildNav(activePage) {
   const pages = [
@@ -26,10 +20,6 @@ function buildNav(activePage) {
   document.querySelector('nav').innerHTML = `
     <a class="nav-brand" href="index.html">
       ${LOGO_SVG}
-      <div class="brand-text">
-        <span class="brand-name">Hire<span>Ginie</span></span>
-        <span class="brand-sub">Talent Cloud</span>
-      </div>
     </a>
     <ul class="nav-links">
       ${links}
